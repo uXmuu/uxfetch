@@ -3,6 +3,8 @@
 #include<errno.h>
 #include<string.h>
 #include<sys/utsname.h>
+#include<ctype.h>
+
 
 #define RED   "\x1B[31m"
 #define GRN   "\x1B[32m"
@@ -13,61 +15,60 @@
 #define WHT   "\x1B[37m"
 #define RESET "\x1B[0m"
 
-char *replace(const char *text, const char *oldWord, const char *newWord) {
-   int i = 0, cnt = 0;
-   int len1 = strlen(newWord);
-   int len2 = strlen(oldWord);
-   for (i = 0; text[i] != '\0'; i++) {
-      if (strstr(&text[i], oldWord) == &text[i]) {
-         cnt++;
-         i += len2 - 1;
-      }
-   }
-   char *newString = (char *)malloc(i + cnt * (len1 - len2) + 1);
-   i = 0;
-   while (*text) {
-      if (strstr(text, oldWord) == text) {
-         strcpy(&newString[i], newWord);
-         i += len1;
-         text += len2;
-      }
-      else
-      newString[i++] = *text++;
-   }
-   char *a[1000];
-   *a = newString;
-   printf(YEL " / \\         /\tmemory:%s\t\t%s",RESET,*a);
+int getInt(char **str){
+	char *p = str;
+	while (*p) {
+	    if ( isdigit(*p) || ( (*p=='-'||*p=='+') && isdigit(*(p+1)) )) {
+	        int val = strtol(p, &p, 10);
+	        return val;//printf("%ld\n", val);
+	    } else {
+	        p++;
+	    }
+	}
+}
+int getMem(){
+	FILE* meminfo = fopen("/proc/meminfo","r");
+	char* mem1[1000];
+	char* mem2[1000];
+	char* mem3[1000];
+	fgets(mem1, 1000, meminfo);
+	fgets(mem2, 1000, meminfo);
+	fgets(mem3, 1000, meminfo);
+	int totalMem = getInt(mem1);
+	int memAvailable = getInt(mem3);
+	int memUsed = totalMem-=memAvailable;
+	memUsed = memUsed/1124;
+	//char m[] = ("%d/%d",memUsed,totalMem);
+	fclose(meminfo);
+	return memUsed;
 }
 int main()
 {
-	FILE* status = fopen("/proc/meminfo","r");
-	char* mem_used[1000];
-	for(int i=0; i<10; i++){
-		fgets(mem_used, 1000, status);
-	}
 	struct utsname buf1;	
-	char* test;
+	char *test;
 	errno = 0;
 	if(uname(&buf1)!=0){
 	
 		exit(EXIT_FAILURE);
 	}
+	int memUsed = getMem();
 	printf(YEL "      _____\n");
 	printf(YEL "    \\-     -/\n");
-	printf(YEL " \\_/         \\ \tos  %s\t\t%s\n",RESET, buf1.nodename);
-	printf(YEL " |        O O |\tVersion  %s\t%s\n",RESET, buf1.version);
+	printf(YEL " \\_/         \\ \thostname  %s\t%s\n",RESET, buf1.nodename);
+	printf(YEL " |        %sO O%s |\tVersion  %s\t%s\n",CYN,YEL,RESET, buf1.version);
 	printf(YEL " |_  <   )  3 )\tkernel  %s\t%s\n",RESET, buf1.release);
-	fclose(status);
-	test = replace(mem_used,"Inactive(anon):  ","");
+	printf(YEL " / \\         /\tmemory%s\t\t%dM\n",RESET,memUsed);
+	printf(test);
+	free(test);
 	printf(YEL "    /-_____-\\\n");
+	
 }
 
-
-/* 
-    \-     -/      
- \_/         \     
- |        O O |    
- |_  <   )  3 )    
- / \         /    
-    /-_____-\  
+/*	  _____
+    \-     -/
+ \_/         \
+ |        O O |
+ |_  <   )  3 )
+ / \         /
+    /-_____-\
 */
